@@ -233,7 +233,6 @@ body {
   border-radius: 16px;
   overflow: hidden;
   background: #070a1c;
-  transform: rotateX(15deg) scale(1.08); /* Re-added tilt and scaled up to zoom in */
   transform-style: preserve-3d;
   box-shadow:
     0 25px 50px rgba(0, 0, 0, 0.9),
@@ -241,6 +240,28 @@ body {
     0 0 60px rgba(139, 92, 246, 0.4),
     0 0 120px rgba(77, 225, 255, 0.2),
     inset 0 0 80px rgba(0, 0, 0, 0.6);
+  animation: pulse-glow 4s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-glow {
+  to {
+    box-shadow:
+      0 35px 70px rgba(0, 0, 0, 0.9),
+      0 0 0 3px rgba(77, 225, 255, 0.8),
+      0 0 90px rgba(139, 92, 246, 0.7),
+      0 0 160px rgba(77, 225, 255, 0.4),
+      inset 0 0 100px rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* Screen Reflection Glare */
+.frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 40%, transparent 60%, rgba(77,225,255,0.08) 100%);
+  pointer-events: none;
+  z-index: 20;
 }
 
 .pac-canvas {
@@ -262,6 +283,12 @@ body {
     transparent 3px
   );
   mix-blend-mode: overlay;
+  background-size: 100% 3px;
+  animation: scroll-scan 10s linear infinite;
+}
+
+@keyframes scroll-scan {
+  to { background-position: 0 100vh; }
 }
 
 /* overlays */

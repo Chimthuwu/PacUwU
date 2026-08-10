@@ -114,6 +114,30 @@ export default function App() {
 
   const g = () => gameRef.current;
 
+  const frameRef = useRef<HTMLDivElement | null>(null);
+  const rot = useRef({ x: 15, y: 0 });
+  const isDragging = useRef(false);
+
+  useEffect(() => {
+    const handleDown = () => (isDragging.current = true);
+    const handleUp = () => (isDragging.current = false);
+    const handleMove = (e: PointerEvent) => {
+      if (!isDragging.current || !frameRef.current) return;
+      rot.current.x = Math.max(0, Math.min(60, rot.current.x - e.movementY * 0.3));
+      rot.current.y = Math.max(-40, Math.min(40, rot.current.y + e.movementX * 0.3));
+      frameRef.current.style.transform = `rotateX(${rot.current.x}deg) rotateY(${rot.current.y}deg) scale(1.08)`;
+    };
+    
+    window.addEventListener('pointerdown', handleDown);
+    window.addEventListener('pointerup', handleUp);
+    window.addEventListener('pointermove', handleMove);
+    return () => {
+      window.removeEventListener('pointerdown', handleDown);
+      window.removeEventListener('pointerup', handleUp);
+      window.removeEventListener('pointermove', handleMove);
+    };
+  }, []);
+
   return (
     <div className="app">
       <div className="orb orb-a" />
@@ -180,7 +204,7 @@ export default function App() {
       </div>
 
       <div className="frame-wrap">
-        <div className="frame">
+        <div className="frame" ref={frameRef} style={{ transform: 'rotateX(15deg) scale(1.08)' }}>
           <canvas ref={canvasRef} width={672} height={744} className="pac-canvas" />
           {scanlines && <div className="scanlines" aria-hidden="true" />}
 
