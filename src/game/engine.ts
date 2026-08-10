@@ -983,23 +983,33 @@ export class Game {
     const hue = (185 + (this.level - 1) * 18) % 360;
     const neon = `hsl(${hue} 100% 62%)`;
 
-    // walls
+    // 2.5D walls
+    const depth = 6;
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         if (this.isWallChar(r, c)) {
           const x = c * TILE;
           const y = r * TILE;
+          
+          // Draw front face (extrusion)
+          g.fillStyle = '#0a102e';
+          g.fillRect(x + 1, y - depth + TILE - 1, TILE - 2, depth + 1);
+
+          // Draw right face
+          g.fillStyle = '#0e163b';
+          g.fillRect(x + TILE - 2, y - depth + 1, 2, TILE - 2 + depth);
+
+          // Top face
           g.shadowColor = neon;
-          g.shadowBlur = 10;
+          g.shadowBlur = 6;
           g.fillStyle = '#131a3e';
-          roundRect(g, x + 2, y + 2, TILE - 4, TILE - 4, 6);
-          g.fill();
+          g.fillRect(x + 1, y - depth + 1, TILE - 2, TILE - 2);
           g.shadowBlur = 0;
+          
           g.strokeStyle = neon;
           g.lineWidth = 1.6;
           g.globalAlpha = 0.9;
-          roundRect(g, x + 2.5, y + 2.5, TILE - 5, TILE - 5, 5.5);
-          g.stroke();
+          g.strokeRect(x + 1.5, y - depth + 1.5, TILE - 3, TILE - 3);
           g.globalAlpha = 1;
         }
       }
@@ -1046,7 +1056,7 @@ export class Game {
       const r = Math.floor(key / COLS);
       const c = key % COLS;
       const x = c * TILE + TILE / 2;
-      const y = r * TILE + TILE / 2 + 1;
+      const y = r * TILE + TILE / 2 + 1 - 6; // -6 for depth
       const color = PELLET_COLORS[(r * 13 + c * 7) % PELLET_COLORS.length];
       g.font = '700 9px Quicksand, "Segoe UI", sans-serif';
       g.shadowColor = color;
@@ -1099,7 +1109,7 @@ export class Game {
       ctx.shadowColor = `hsl(${hue} 100% 60%)`;
       ctx.shadowBlur = 8;
       ctx.beginPath();
-      ctx.arc(t.x, t.y, t.size * a + 0.6, 0, Math.PI * 2);
+      ctx.arc(t.x, t.y - 6, t.size * a + 0.6, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
@@ -1108,15 +1118,15 @@ export class Game {
   private drawHouseGhost(ctx: CanvasRenderingContext2D, g: Ghost) {
     const x = (g.houseCol + 0.5) * TILE;
     const y = (HOUSE_ROW + 0.5) * TILE + Math.sin(g.bouncePhase) * TILE * 0.55;
-    this.drawGhostBody(ctx, x, y, g.color, 1, g.dir, g.frightened);
+    this.drawGhostBody(ctx, x, y - 6, g.color, 1, g.dir, g.frightened);
   }
 
   private drawGhost(ctx: CanvasRenderingContext2D, g: Ghost) {
     const p = this.posOf(g);
     if (g.state === 'eyes') {
-      this.drawEyes(ctx, p.x, p.y, TILE * 0.48, g.dir);
+      this.drawEyes(ctx, p.x, p.y - 6, TILE * 0.48, g.dir);
     } else {
-      this.drawGhostBody(ctx, p.x, p.y, g.color, 1, g.dir, g.frightened);
+      this.drawGhostBody(ctx, p.x, p.y - 6, g.color, 1, g.dir, g.frightened);
     }
   }
 
@@ -1208,7 +1218,7 @@ export class Game {
     const r = TILE * 0.48;
     const chomp = 0.16 + 0.3 * Math.abs(Math.sin(this.pac.chompT));
     ctx.save();
-    ctx.translate(p.x, p.y);
+    ctx.translate(p.x, p.y - 6);
     ctx.rotate(DIR_ANGLE[this.pac.dir]);
     ctx.shadowColor = '#ffd93d';
     ctx.shadowBlur = 14;
@@ -1242,7 +1252,7 @@ export class Game {
     const t = Math.min(1, this.deathT / 1.7);
     const r = TILE * 0.48 * (1.15 - 1.0 * t) * Math.max(0.01, 1 - t * 0.4);
     ctx.save();
-    ctx.translate(p.x, p.y);
+    ctx.translate(p.x, p.y - 6);
     ctx.rotate(this.deathT * 6);
     ctx.fillStyle = '#ffd93d';
     ctx.shadowColor = '#ffd93d';
@@ -1264,7 +1274,7 @@ export class Game {
       const r = Math.floor(key / COLS);
       const c = key % COLS;
       const x = c * TILE + TILE / 2;
-      const y = r * TILE + TILE / 2;
+      const y = r * TILE + TILE / 2 - 6; // -6 for depth
       const pulse = 1 + Math.sin(this.time * 5 + r + c) * 0.12;
       ctx.save();
       ctx.translate(x, y);
@@ -1288,7 +1298,7 @@ export class Game {
     if (!this.bonus) return;
     const b = this.bonus;
     const x = b.tile.c * TILE + TILE / 2;
-    const y = b.tile.r * TILE + TILE / 2 + Math.sin(this.time * 6) * 2;
+    const y = b.tile.r * TILE + TILE / 2 + Math.sin(this.time * 6) * 2 - 6;
     const fade = b.life - b.t < 2 ? 0.4 + 0.6 * Math.abs(Math.sin(this.time * 8)) : 1;
     ctx.save();
     ctx.globalAlpha = fade;
@@ -1327,7 +1337,7 @@ export class Game {
       ctx.shadowColor = pt.color;
       ctx.shadowBlur = 6;
       ctx.beginPath();
-      ctx.arc(pt.x, pt.y, pt.size * a + 0.5, 0, Math.PI * 2);
+      ctx.arc(pt.x, pt.y - 6, pt.size * a + 0.5, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
