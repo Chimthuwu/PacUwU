@@ -444,7 +444,7 @@ export class Game {
       m.nextDir = Dir.None;
     }
     const crossed = this.advance(m, this.pacSpeed(), dt);
-    if (m.nextDir !== Dir.None && (crossed || m.p <= 0.3)) {
+    if (m.nextDir !== Dir.None && (crossed || m.p <= 0.5)) {
       const v = DIR_VEC[m.nextDir];
       if (pacmanPassable(m.r + v.y, m.c + v.x)) {
         m.dir = m.nextDir;
@@ -498,8 +498,8 @@ export class Game {
     }
     const pass = m.isGhost ? ghostPassable(nr, nc) : pacmanPassable(nr, nc);
     if (!pass) {
-      // hug the wall boundary (half a tile from the current center)
-      m.p = Math.min(m.p, 0.5);
+      // hug the wall boundary (center of current tile)
+      m.p = Math.min(m.p, 0);
       return false;
     }
     let crossed = false;
@@ -517,7 +517,7 @@ export class Game {
       }
       const nextPass = m.isGhost ? ghostPassable(nr, nc) : pacmanPassable(nr, nc);
       if (!nextPass) {
-        m.p = 0.5;
+        m.p = 0;
         break;
       }
     }

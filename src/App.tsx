@@ -117,14 +117,21 @@ export default function App() {
   const frameRef = useRef<HTMLDivElement | null>(null);
   const rot = useRef({ x: 15, y: 0 });
   const isDragging = useRef(false);
+  const lastPos = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-    const handleDown = () => (isDragging.current = true);
+    const handleDown = (e: PointerEvent) => {
+      isDragging.current = true;
+      lastPos.current = { x: e.clientX, y: e.clientY };
+    };
     const handleUp = () => (isDragging.current = false);
     const handleMove = (e: PointerEvent) => {
       if (!isDragging.current || !frameRef.current) return;
-      rot.current.x = Math.max(0, Math.min(60, rot.current.x - e.movementY * 0.3));
-      rot.current.y = Math.max(-40, Math.min(40, rot.current.y + e.movementX * 0.3));
+      const dx = e.clientX - lastPos.current.x;
+      const dy = e.clientY - lastPos.current.y;
+      lastPos.current = { x: e.clientX, y: e.clientY };
+      rot.current.x = Math.max(0, Math.min(60, rot.current.x - dy * 0.4));
+      rot.current.y = Math.max(-40, Math.min(40, rot.current.y + dx * 0.4));
       frameRef.current.style.transform = `rotateX(${rot.current.x}deg) rotateY(${rot.current.y}deg) scale(1.08)`;
     };
     
