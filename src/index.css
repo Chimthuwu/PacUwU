@@ -224,8 +224,8 @@ body {
 /* frame */
 .frame-wrap {
   z-index: 1;
-  width: min(94vw, calc((100dvh - 220px) * 672 / 744), 640px);
-  perspective: 1200px;
+  width: min(94vw, calc((100dvh - 220px) * 672 / 744), 800px); /* Increased max-width to zoom in */
+  perspective: 1000px;
 }
 
 .frame {
@@ -233,14 +233,14 @@ body {
   border-radius: 16px;
   overflow: hidden;
   background: #070a1c;
-  transform: rotateX(5deg) scale(0.98);
+  transform: rotateX(15deg) scale(1.08); /* Re-added tilt and scaled up to zoom in */
   transform-style: preserve-3d;
   box-shadow:
-    0 15px 35px rgba(0, 0, 0, 0.8),
-    0 0 0 2px rgba(77, 225, 255, 0.3),
-    0 0 44px rgba(139, 92, 246, 0.35),
-    0 0 110px rgba(77, 225, 255, 0.14),
-    inset 0 0 70px rgba(0, 0, 0, 0.55);
+    0 25px 50px rgba(0, 0, 0, 0.9),
+    0 0 0 2px rgba(77, 225, 255, 0.5),
+    0 0 60px rgba(139, 92, 246, 0.4),
+    0 0 120px rgba(77, 225, 255, 0.2),
+    inset 0 0 80px rgba(0, 0, 0, 0.6);
 }
 
 .pac-canvas {
