@@ -444,11 +444,12 @@ export class Game {
       m.nextDir = Dir.None;
     }
     const crossed = this.advance(m, this.pacSpeed(), dt);
-    if (m.nextDir !== Dir.None && (crossed || m.p <= 0.001)) {
+    if (m.nextDir !== Dir.None && (crossed || m.p <= 0.3)) {
       const v = DIR_VEC[m.nextDir];
       if (pacmanPassable(m.r + v.y, m.c + v.x)) {
         m.dir = m.nextDir;
         m.nextDir = Dir.None;
+        if (!crossed) m.p = 0;
       }
     }
     m.chompT += dt * 9;
@@ -1152,7 +1153,12 @@ export class Game {
     ctx.save();
     ctx.shadowColor = frightened ? '#2e4fff' : color;
     ctx.shadowBlur = 12;
-    ctx.fillStyle = flash ? '#ffffff' : frightened ? '#2e4fff' : color;
+    
+    const grad = ctx.createLinearGradient(x, y - r, x, y + r);
+    grad.addColorStop(0, flash ? '#ffffff' : frightened ? '#5c80ff' : '#ffffff');
+    grad.addColorStop(1, flash ? '#aaaaaa' : frightened ? '#182b99' : color);
+    ctx.fillStyle = grad;
+
     ctx.beginPath();
     ctx.arc(x, y - r * 0.15, r, Math.PI, 0);
     for (let i = 0; i < 3; i++) {
@@ -1206,7 +1212,13 @@ export class Game {
     ctx.rotate(DIR_ANGLE[this.pac.dir]);
     ctx.shadowColor = '#ffd93d';
     ctx.shadowBlur = 14;
-    ctx.fillStyle = '#ffd93d';
+
+    const grad = ctx.createRadialGradient(r * 0.2, -r * 0.2, r * 0.1, 0, 0, r);
+    grad.addColorStop(0, '#fff5b8');
+    grad.addColorStop(0.6, '#ffd93d');
+    grad.addColorStop(1, '#cc9e00');
+    ctx.fillStyle = grad;
+
     ctx.beginPath();
     ctx.arc(0, 0, r, chomp, Math.PI * 2 - chomp);
     ctx.lineTo(0, 0);
