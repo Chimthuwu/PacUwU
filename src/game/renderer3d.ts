@@ -17,7 +17,7 @@ export class Renderer3D {
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false });
-    this.renderer.setSize(CANVAS_W, CANVAS_H);
+    this.renderer.setSize(CANVAS_W, CANVAS_H, false);
     // Remove the CSS scaling/rotation from the canvas itself so we render sharp
     this.renderer.setPixelRatio(window.devicePixelRatio);
 
@@ -26,7 +26,7 @@ export class Renderer3D {
 
     // Camera setup for an isometric/angled view
     this.camera = new THREE.PerspectiveCamera(45, CANVAS_W / CANVAS_H, 1, 3000);
-    this.camera.position.set(CANVAS_W / 2, CANVAS_H + 400, 500);
+    this.camera.position.set(CANVAS_W / 2, CANVAS_H + 300, 800);
     this.camera.lookAt(CANVAS_W / 2, CANVAS_H / 2, 0);
 
     // Lighting
@@ -39,9 +39,9 @@ export class Renderer3D {
 
     // Post-processing Bloom
     const renderScene = new RenderPass(this.scene, this.camera);
-    const bloomPass = new UnrealBloomPass(new THREE.Vector2(CANVAS_W, CANVAS_H), 1.2, 0.4, 0.2);
-    bloomPass.threshold = 0.1;
-    bloomPass.strength = 1.0;
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(CANVAS_W, CANVAS_H), 0.6, 0.4, 0.65);
+    bloomPass.threshold = 0.65;
+    bloomPass.strength = 0.6;
     bloomPass.radius = 0.5;
 
     this.composer = new EffectComposer(this.renderer);
@@ -53,33 +53,29 @@ export class Renderer3D {
   }
 
   private buildMaze() {
-    const wallMaterial = new THREE.MeshStandardMaterial({
-      color: '#0a0d2a',
-      emissive: '#111841',
-      emissiveIntensity: 0.2,
-      roughness: 0.8,
-      metalness: 0.2,
+    const sideMat = new THREE.MeshStandardMaterial({
+      color: '#050717',
+      roughness: 0.9,
+      metalness: 0.1,
     });
     
-    // Create glowing neon edges for the walls
-    const edgeMaterial = new THREE.LineBasicMaterial({ color: '#4de1ff', linewidth: 2 });
-    // We'll create one instanced mesh if we want, or just add meshes to a group
+    const topMat = new THREE.MeshStandardMaterial({
+      color: '#111841',
+      emissive: '#092340',
+      emissiveIntensity: 0.6,
+      roughness: 0.4,
+      metalness: 0.5,
+    });
+
+    const wallMaterials = [sideMat, sideMat, sideMat, sideMat, topMat, sideMat];
     const mazeGroup = new THREE.Group();
-    
     const wallGeo = new THREE.BoxGeometry(TILE, TILE, 30);
-    const edgeGeo = new THREE.EdgesGeometry(wallGeo);
 
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         if (GRID[r] && GRID[r][c] === '#') {
-          const mesh = new THREE.Mesh(wallGeo, wallMaterial);
-          // In Three.js, let's map X to column (left-right), Y to row (top-bottom inverted? No, let's map Y to inverted row so it matches 2D)
-          // Wait, in 2D canvas, Y increases downwards. In Three.js, Y increases upwards.
-          // Let's keep X and Y exactly the same as 2D canvas, but invert Y for the camera!
+          const mesh = new THREE.Mesh(wallGeo, wallMaterials);
           mesh.position.set(c * TILE + TILE/2, r * TILE + TILE/2, 15);
-          
-          const edges = new THREE.LineSegments(edgeGeo, edgeMaterial);
-          mesh.add(edges);
           mazeGroup.add(mesh);
         }
       }
@@ -101,9 +97,9 @@ export class Renderer3D {
     const pacGeo = new THREE.SphereGeometry(TILE * 0.45, 32, 32);
     const pacMat = new THREE.MeshStandardMaterial({ 
       color: '#ffd93d', 
-      emissive: '#cc9e00', 
-      emissiveIntensity: 0.5,
-      roughness: 0.3,
+      emissive: '#ffb300', 
+      emissiveIntensity: 0.8,
+      roughness: 0.2,
     });
     const sphere = new THREE.Mesh(pacGeo, pacMat);
     this.pacMesh.add(sphere);
@@ -159,7 +155,7 @@ export class Renderer3D {
 
       mat.color.set(targetColor);
       mat.emissive.set(targetColor);
-      mat.emissiveIntensity = g.frightened ? 0.8 : 0.3;
+      mat.emissiveIntensity = g.frightened ? 1.0 : 0.6;
 
       meshGroup.position.set(gPos.x, gPos.y, 15);
       
@@ -198,10 +194,10 @@ export class Renderer3D {
       const s = game.shakeT / 0.35;
       const mag = game.shakeMag * s * 2;
       this.camera.position.x = CANVAS_W / 2 + (Math.random() - 0.5) * mag;
-      this.camera.position.y = CANVAS_H + 400 + (Math.random() - 0.5) * mag;
+      this.camera.position.y = CANVAS_H + 300 + (Math.random() - 0.5) * mag;
     } else {
       this.camera.position.x = CANVAS_W / 2;
-      this.camera.position.y = CANVAS_H + 400;
+      this.camera.position.y = CANVAS_H + 300;
     }
 
     // We keep Y pointing downwards in our coordinates, but Three.js expects Y to go up.
