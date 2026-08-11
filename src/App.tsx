@@ -115,7 +115,7 @@ export default function App() {
   const g = () => gameRef.current;
 
   const frameRef = useRef<HTMLDivElement | null>(null);
-  const rot = useRef({ x: 15, y: 0 });
+  const rot = useRef({ x: 28, y: -8 });
   const isDragging = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
 
@@ -211,7 +211,7 @@ export default function App() {
       </div>
 
       <div className="frame-wrap">
-        <div className="frame" ref={frameRef} style={{ transform: 'rotateX(15deg) scale(1.08)' }}>
+        <div className="frame" ref={frameRef} style={{ transform: 'rotateX(28deg) rotateY(-8deg) scale(1.08)' }}>
           <canvas ref={canvasRef} width={672} height={744} className="pac-canvas" />
           {scanlines && <div className="scanlines" aria-hidden="true" />}
 
@@ -308,10 +308,10 @@ export default function App() {
       )}
 
       <div className="dpad" aria-label="touch controls">
-        <button type="button" className="dpad-btn dpad-up" onPointerDown={(e) => { e.preventDefault(); g()?.setDir(Dir.Up); }}>▲</button>
-        <button type="button" className="dpad-btn dpad-left" onPointerDown={(e) => { e.preventDefault(); g()?.setDir(Dir.Left); }}>◀</button>
-        <button type="button" className="dpad-btn dpad-right" onPointerDown={(e) => { e.preventDefault(); g()?.setDir(Dir.Right); }}>▶</button>
-        <button type="button" className="dpad-btn dpad-down" onPointerDown={(e) => { e.preventDefault(); g()?.setDir(Dir.Down); }}>▼</button>
+        <button type="button" className="dpad-btn dpad-up" onPointerDown={(e: React.PointerEvent) => { e.preventDefault(); g()?.setDir(Dir.Up); }}>▲</button>
+        <button type="button" className="dpad-btn dpad-left" onPointerDown={(e: React.PointerEvent) => { e.preventDefault(); g()?.setDir(Dir.Left); }}>◀</button>
+        <button type="button" className="dpad-btn dpad-right" onPointerDown={(e: React.PointerEvent) => { e.preventDefault(); g()?.setDir(Dir.Right); }}>▶</button>
+        <button type="button" className="dpad-btn dpad-down" onPointerDown={(e: React.PointerEvent) => { e.preventDefault(); g()?.setDir(Dir.Down); }}>▼</button>
       </div>
     </div>
   );

@@ -149,7 +149,6 @@ export class Game {
   private pelletsLeft = 0;
   private pelletsEaten = 0;
   private mazeLayer: HTMLCanvasElement | null = null;
-  private pelletLayer: HTMLCanvasElement | null = null;
 
   private pac: Pac = {
     r: START_TILE.r,
@@ -974,52 +973,44 @@ export class Game {
 
     // floor
     const grad = g.createLinearGradient(0, 0, 0, CANVAS_H);
-    grad.addColorStop(0, '#0b0e26');
-    grad.addColorStop(1, '#070a1c');
+    grad.addColorStop(0, '#0c0e2b');
+    grad.addColorStop(1, '#050717');
     g.fillStyle = grad;
     g.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-    // neon color shifts slightly per level
+    // Beautiful grid background for high-tech aesthetic
     const hue = (185 + (this.level - 1) * 18) % 360;
-    const neon = `hsl(${hue} 100% 62%)`;
 
-    // 2.5D walls
-    const depth = 6;
+    g.strokeStyle = `hsla(${hue}, 100%, 62%, 0.05)`;
+    g.lineWidth = 1;
+    for (let r = 0; r <= ROWS; r++) {
+      g.beginPath();
+      g.moveTo(0, r * TILE);
+      g.lineTo(CANVAS_W, r * TILE);
+      g.stroke();
+    }
+    for (let c = 0; c <= COLS; c++) {
+      g.beginPath();
+      g.moveTo(c * TILE, 0);
+      g.lineTo(c * TILE, CANVAS_H);
+      g.stroke();
+    }
+
+    // Draw subtle cyber/neon patterns on the floor corridors
+    g.fillStyle = `hsla(${hue}, 100%, 62%, 0.018)`;
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
-        if (this.isWallChar(r, c)) {
-          const x = c * TILE;
-          const y = r * TILE;
-          
-          // Draw front face (extrusion)
-          g.fillStyle = '#0a102e';
-          g.fillRect(x + 1, y - depth + TILE - 1, TILE - 2, depth + 1);
-
-          // Draw right face
-          g.fillStyle = '#0e163b';
-          g.fillRect(x + TILE - 2, y - depth + 1, 2, TILE - 2 + depth);
-
-          // Top face
-          g.shadowColor = neon;
-          g.shadowBlur = 6;
-          g.fillStyle = '#131a3e';
-          g.fillRect(x + 1, y - depth + 1, TILE - 2, TILE - 2);
-          g.shadowBlur = 0;
-          
-          g.strokeStyle = neon;
-          g.lineWidth = 1.6;
-          g.globalAlpha = 0.9;
-          g.strokeRect(x + 1.5, y - depth + 1.5, TILE - 3, TILE - 3);
-          g.globalAlpha = 1;
+        if (!this.isWallChar(r, c) && GRID[r][c] !== ' ') {
+          g.fillRect(c * TILE + 2, r * TILE + 2, TILE - 4, TILE - 4);
         }
       }
     }
 
     // ghost house tint + door
-    g.fillStyle = 'rgba(255,79,140,0.06)';
+    g.fillStyle = 'rgba(255,79,140,0.08)';
     roundRect(g, 11 * TILE, 13 * TILE, 6 * TILE, 4 * TILE, 10);
     g.fill();
-    g.strokeStyle = 'rgba(255,79,140,0.35)';
+    g.strokeStyle = 'rgba(255,79,140,0.45)';
     g.lineWidth = 2;
     g.setLineDash([4, 4]);
     roundRect(g, 11 * TILE, 13 * TILE, 6 * TILE, 4 * TILE, 10);
@@ -1043,28 +1034,188 @@ export class Game {
   }
 
   private rebuildPelletLayer() {
-    const layer = document.createElement('canvas');
-    layer.width = CANVAS_W;
-    layer.height = CANVAS_H;
-    const g = layer.getContext('2d');
-    if (!g) return;
-    this.pelletLayer = layer;
-    g.textAlign = 'center';
-    g.textBaseline = 'middle';
-    this.pellets.forEach((power, key) => {
-      if (power) return; // OwO power pellets drawn dynamically for pulse
-      const r = Math.floor(key / COLS);
-      const c = key % COLS;
-      const x = c * TILE + TILE / 2;
-      const y = r * TILE + TILE / 2 + 1 - 6; // -6 for depth
-      const color = PELLET_COLORS[(r * 13 + c * 7) % PELLET_COLORS.length];
-      g.font = '700 9px Quicksand, "Segoe UI", sans-serif';
-      g.shadowColor = color;
-      g.shadowBlur = 7;
-      g.fillStyle = color;
-      g.fillText('UwU', x, y);
-      g.shadowBlur = 0;
-    });
+    // Left as no-op. Pellets are now rendered dynamically row-by-row
+    // in the depth-sorted render loop to ensure correct occlusion.
+  }
+
+  // ------------------------------------------------------------------ 3D Rendering Helpers
+
+  private draw3DWall(ctx: CanvasRenderingContext2D, r: number, c: number, neonColor: string) {
+    const x = c * TILE;
+    const y = r * TILE;
+    const h = 22; // Height of the 3D block
+
+    // Check adjacent tiles to see which faces are exposed
+    const drawLeft = !this.isWallChar(r, c - 1);
+    const drawRight = !this.isWallChar(r, c + 1);
+    const drawFront = !this.isWallChar(r + 1, c);
+
+    // Front face (South)
+    if (drawFront) {
+      const grad = ctx.createLinearGradient(x, y + TILE - h, x, y + TILE);
+      grad.addColorStop(0, '#121841');
+      grad.addColorStop(1, '#06081d');
+      ctx.fillStyle = grad;
+      ctx.fillRect(x, y + TILE - h, TILE, h);
+
+      // Front vertical specular highlights on corners
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x + 0.5, y + TILE - h);
+      ctx.lineTo(x + 0.5, y + TILE);
+      ctx.moveTo(x + TILE - 0.5, y + TILE - h);
+      ctx.lineTo(x + TILE - 0.5, y + TILE);
+      ctx.stroke();
+    }
+
+    // Right face (East)
+    if (drawRight) {
+      const grad = ctx.createLinearGradient(x + TILE, y - h, x + TILE, y + TILE);
+      grad.addColorStop(0, '#0a0d2a');
+      grad.addColorStop(1, '#030514');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(x + TILE, y);
+      ctx.lineTo(x + TILE, y + TILE);
+      ctx.lineTo(x + TILE, y + TILE - h);
+      ctx.lineTo(x + TILE, y - h);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Left face (West)
+    if (drawLeft) {
+      const grad = ctx.createLinearGradient(x, y - h, x, y + TILE);
+      grad.addColorStop(0, '#192159');
+      grad.addColorStop(1, '#070a21');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y + TILE);
+      ctx.lineTo(x, y + TILE - h);
+      ctx.lineTo(x, y - h);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Top face
+    ctx.fillStyle = '#171e54';
+    ctx.fillRect(x + 0.5, y - h + 0.5, TILE - 1, TILE - 1);
+
+    // Neon glow cap
+    ctx.strokeStyle = neonColor;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x + 1, y - h + 1, TILE - 2, TILE - 2);
+
+    // Inner detail (neon core)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+    ctx.fillRect(x + 3, y - h + 3, TILE - 6, TILE - 6);
+  }
+
+  private drawFloorShadow(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+    ctx.beginPath();
+    ctx.ellipse(x, y, r, r * 0.45, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  private drawPelletsInRow(ctx: CanvasRenderingContext2D, r: number) {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    for (let c = 0; c < COLS; c++) {
+      const key = r * COLS + c;
+      if (this.pellets.has(key)) {
+        const power = this.pellets.get(key)!;
+        const x = c * TILE + TILE / 2;
+        const y = r * TILE + TILE / 2;
+        
+        if (power) {
+          const pulse = 1 + Math.sin(this.time * 5 + r + c) * 0.12;
+          ctx.save();
+          ctx.translate(x, y - 5); // Float power pellet
+          ctx.scale(pulse, pulse);
+          
+          // Small floating shadow on floor
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+          ctx.beginPath();
+          ctx.ellipse(0, 5, 8, 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+          
+          ctx.shadowColor = '#ffe08a';
+          ctx.shadowBlur = 10;
+          ctx.fillStyle = '#fff7d6';
+          ctx.font = '700 13px Quicksand, "Segoe UI", sans-serif';
+          ctx.fillText('OwO', 0, 0);
+          ctx.shadowBlur = 0;
+          
+          ctx.strokeStyle = 'rgba(255,224,138,0.45)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(0, 0, 10, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        } else {
+          // Normal UwU pellet on floor
+          const color = PELLET_COLORS[(r * 13 + c * 7) % PELLET_COLORS.length];
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 4;
+          ctx.fillStyle = color;
+          ctx.font = '700 9px Quicksand, "Segoe UI", sans-serif';
+          ctx.fillText('UwU', x, y);
+        }
+      }
+    }
+    ctx.restore();
+  }
+
+  private drawTrailInRow(ctx: CanvasRenderingContext2D, r: number) {
+    for (const t of this.trail) {
+      if (Math.floor(t.y / TILE) === r) {
+        const a = Math.max(0, 1 - t.t / t.life);
+        const hue = t.hue % 360;
+        ctx.save();
+        ctx.globalAlpha = a * 0.85;
+        ctx.fillStyle = `hsl(${hue} 100% 65%)`;
+        ctx.shadowColor = `hsl(${hue} 100% 60%)`;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, t.size * a + 0.6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+  }
+
+  private drawBonusInRow(ctx: CanvasRenderingContext2D, r: number) {
+    if (!this.bonus || this.bonus.tile.r !== r) return;
+    const b = this.bonus;
+    const x = b.tile.c * TILE + TILE / 2;
+    const y = b.tile.r * TILE + TILE / 2;
+    const floatY = Math.sin(this.time * 6) * 2;
+    const fade = b.life - b.t < 2 ? 0.4 + 0.6 * Math.abs(Math.sin(this.time * 8)) : 1;
+    ctx.save();
+    
+    // Shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.beginPath();
+    ctx.ellipse(x, y, 10, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.globalAlpha = fade;
+    ctx.translate(x, y - 8 + floatY);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = '#ff4fd8';
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = '#ff8fd8';
+    ctx.font = '700 14px Quicksand, "Segoe UI", sans-serif';
+    ctx.fillText('XD', 0, 0);
+    ctx.restore();
   }
 
   // ------------------------------------------------------------------ render
@@ -1074,59 +1225,89 @@ export class Game {
     ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
     ctx.fillStyle = '#070a1c';
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    
     // screen shake (decays over time)
     const s = this.shakeT > 0 ? this.shakeT / SHAKE_DURATION : 0;
     ctx.save();
     if (s > 0) {
       ctx.translate((Math.random() * 2 - 1) * this.shakeMag * s, (Math.random() * 2 - 1) * this.shakeMag * s);
     }
+    
+    // Draw pre-rendered floor layer (includes grid, house, and background)
     if (this.mazeLayer) ctx.drawImage(this.mazeLayer, 0, 0);
-    if (this.pelletLayer) ctx.drawImage(this.pelletLayer, 0, 0);
-    this.drawPowerPellets(ctx);
-    this.drawBonus(ctx);
-    this.drawTrail(ctx);
 
-    for (const g of this.ghosts) {
-      if (g.state === 'house') this.drawHouseGhost(ctx, g);
-      else this.drawGhost(ctx, g);
+    const hue = (185 + (this.level - 1) * 18) % 360;
+    const neon = `hsl(${hue} 100% 62%)`;
+
+    // Painter's algorithm: draw row-by-row to correctly overlap elements
+    for (let r = 0; r < ROWS; r++) {
+      // 1. Draw floor trail elements in this row
+      this.drawTrailInRow(ctx, r);
+
+      // 2. Draw pellets in this row
+      this.drawPelletsInRow(ctx, r);
+
+      // 3. Draw bonus in this row
+      this.drawBonusInRow(ctx, r);
+
+      // 4. Draw walls in this row (so they sort behind movers in later rows)
+      for (let c = 0; c < COLS; c++) {
+        if (this.isWallChar(r, c)) {
+          this.draw3DWall(ctx, r, c, neon);
+        }
+      }
+
+      // 5. Draw Pacman if in this row
+      const px = this.posOf(this.pac);
+      const pacR = Math.floor(px.y / TILE);
+      if (pacR === r && this.state !== 'dying') {
+        this.drawPac(ctx);
+      }
+
+      // 6. Draw ghosts if in this row
+      for (const g of this.ghosts) {
+        let ghostR = 14;
+        if (g.state === 'house') {
+          const gy = (HOUSE_ROW + 0.5) * TILE + Math.sin(g.bouncePhase) * TILE * 0.55;
+          ghostR = Math.floor(gy / TILE);
+        } else {
+          const gp = this.posOf(g);
+          ghostR = Math.floor(gp.y / TILE);
+        }
+        if (ghostR === r) {
+          if (g.state === 'house') this.drawHouseGhost(ctx, g);
+          else this.drawGhost(ctx, g);
+        }
+      }
+
+      // 7. Draw dying pacman if in this row
+      if (this.state === 'dying' && pacR === r) {
+        this.drawDyingPac(ctx);
+      }
     }
-    if (this.state === 'dying') this.drawDyingPac(ctx);
-    else this.drawPac(ctx);
 
+    // Render screen space FX overlays (floats, particles, text) always on top
     this.drawFloats(ctx);
     this.drawParticles(ctx);
     this.drawCenterMessage(ctx);
+    
     ctx.restore();
-  }
-
-  private drawTrail(ctx: CanvasRenderingContext2D) {
-    for (const t of this.trail) {
-      const a = Math.max(0, 1 - t.t / t.life);
-      const hue = t.hue % 360;
-      ctx.save();
-      ctx.globalAlpha = a * 0.85;
-      ctx.fillStyle = `hsl(${hue} 100% 65%)`;
-      ctx.shadowColor = `hsl(${hue} 100% 60%)`;
-      ctx.shadowBlur = 8;
-      ctx.beginPath();
-      ctx.arc(t.x, t.y - 6, t.size * a + 0.6, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
   }
 
   private drawHouseGhost(ctx: CanvasRenderingContext2D, g: Ghost) {
     const x = (g.houseCol + 0.5) * TILE;
     const y = (HOUSE_ROW + 0.5) * TILE + Math.sin(g.bouncePhase) * TILE * 0.55;
-    this.drawGhostBody(ctx, x, y - 6, g.color, 1, g.dir, g.frightened);
+    this.drawFloorShadow(ctx, x, y, TILE * 0.4);
+    this.drawGhostBody(ctx, x, y - 12, g.color, 1, g.dir, g.frightened);
   }
 
   private drawGhost(ctx: CanvasRenderingContext2D, g: Ghost) {
     const p = this.posOf(g);
+    this.drawFloorShadow(ctx, p.x, p.y, TILE * 0.4);
     if (g.state === 'eyes') {
-      this.drawEyes(ctx, p.x, p.y - 6, TILE * 0.48, g.dir);
+      this.drawEyes(ctx, p.x, p.y - 12, TILE * 0.48, g.dir);
     } else {
-      this.drawGhostBody(ctx, p.x, p.y - 6, g.color, 1, g.dir, g.frightened);
+      this.drawGhostBody(ctx, p.x, p.y - 12, g.color, 1, g.dir, g.frightened);
     }
   }
 
@@ -1217,8 +1398,11 @@ export class Game {
     const p = this.posOf(this.pac);
     const r = TILE * 0.48;
     const chomp = 0.16 + 0.3 * Math.abs(Math.sin(this.pac.chompT));
+    
+    this.drawFloorShadow(ctx, p.x, p.y, r);
+    
     ctx.save();
-    ctx.translate(p.x, p.y - 6);
+    ctx.translate(p.x, p.y - 10);
     ctx.rotate(DIR_ANGLE[this.pac.dir]);
     ctx.shadowColor = '#ffd93d';
     ctx.shadowBlur = 14;
@@ -1251,8 +1435,11 @@ export class Game {
     const p = this.posOf(this.pac);
     const t = Math.min(1, this.deathT / 1.7);
     const r = TILE * 0.48 * (1.15 - 1.0 * t) * Math.max(0.01, 1 - t * 0.4);
+    
+    this.drawFloorShadow(ctx, p.x, p.y, r * (1 - t));
+    
     ctx.save();
-    ctx.translate(p.x, p.y - 6);
+    ctx.translate(p.x, p.y - 10);
     ctx.rotate(this.deathT * 6);
     ctx.fillStyle = '#ffd93d';
     ctx.shadowColor = '#ffd93d';
@@ -1266,53 +1453,8 @@ export class Game {
     ctx.restore();
   }
 
-  private drawPowerPellets(ctx: CanvasRenderingContext2D) {
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    this.pellets.forEach((power, key) => {
-      if (!power) return;
-      const r = Math.floor(key / COLS);
-      const c = key % COLS;
-      const x = c * TILE + TILE / 2;
-      const y = r * TILE + TILE / 2 - 6; // -6 for depth
-      const pulse = 1 + Math.sin(this.time * 5 + r + c) * 0.12;
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.scale(pulse, pulse);
-      ctx.shadowColor = '#ffe08a';
-      ctx.shadowBlur = 16;
-      ctx.fillStyle = '#fff7d6';
-      ctx.font = '700 15px Quicksand, "Segoe UI", sans-serif';
-      ctx.fillText('OwO', 0, 1);
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = 'rgba(255,224,138,0.55)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(0, 0, 12, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
-    });
-  }
-
-  private drawBonus(ctx: CanvasRenderingContext2D) {
-    if (!this.bonus) return;
-    const b = this.bonus;
-    const x = b.tile.c * TILE + TILE / 2;
-    const y = b.tile.r * TILE + TILE / 2 + Math.sin(this.time * 6) * 2 - 6;
-    const fade = b.life - b.t < 2 ? 0.4 + 0.6 * Math.abs(Math.sin(this.time * 8)) : 1;
-    ctx.save();
-    ctx.globalAlpha = fade;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = '#ff4fd8';
-    ctx.shadowBlur = 14;
-    ctx.fillStyle = '#ff8fd8';
-    ctx.font = '700 14px Quicksand, "Segoe UI", sans-serif';
-    ctx.fillText('XD', x, y);
-    ctx.restore();
-  }
-
   private drawFloats(ctx: CanvasRenderingContext2D) {
+    ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     for (const f of this.floats) {
@@ -1323,9 +1465,10 @@ export class Game {
       ctx.shadowBlur = 8;
       ctx.fillStyle = f.color;
       ctx.font = '9px "Press Start 2P", monospace';
-      ctx.fillText(f.text, f.x, f.y);
+      ctx.fillText(f.text, f.x, f.y - 12);
       ctx.restore();
     }
+    ctx.restore();
   }
 
   private drawParticles(ctx: CanvasRenderingContext2D) {
@@ -1337,7 +1480,7 @@ export class Game {
       ctx.shadowColor = pt.color;
       ctx.shadowBlur = 6;
       ctx.beginPath();
-      ctx.arc(pt.x, pt.y - 6, pt.size * a + 0.5, 0, Math.PI * 2);
+      ctx.arc(pt.x, pt.y - 10, pt.size * a + 0.5, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
@@ -1345,11 +1488,11 @@ export class Game {
 
   private drawCenterMessage(ctx: CanvasRenderingContext2D) {
     if (this.state !== 'ready' && this.state !== 'levelClear') return;
+    ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const y = 20 * TILE + TILE / 2;
     const pulse = 0.75 + 0.25 * Math.sin(this.time * 5);
-    ctx.save();
     ctx.globalAlpha = pulse;
     ctx.shadowColor = '#4de1ff';
     ctx.shadowBlur = 16;
