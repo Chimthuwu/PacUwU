@@ -1,10 +1,7 @@
 import {
   BONUS_TILE,
-  CANVAS_H,
-  CANVAS_W,
   COLS,
   DOOR_TILES,
-  GRID,
   HOUSE_CENTER,
   HOUSE_EXIT,
   ROWS,
@@ -17,6 +14,7 @@ import {
   pacmanPassable,
 } from './constants';
 import { Sfx } from './audio';
+import { Renderer3D } from './renderer3d';
 
 export const Dir = { Up: 0, Down: 1, Left: 2, Right: 3, None: 4 } as const;
 export type Dir = (typeof Dir)[keyof typeof Dir];
@@ -41,8 +39,6 @@ const DIR_VEC: ReadonlyArray<{ x: number; y: number }> = [
   { x: 1, y: 0 }, // Right
 ];
 const REVERSE = [1, 0, 3, 2];
-// Rotation (radians) that makes a +x-facing sprite point along each direction.
-const DIR_ANGLE = [-Math.PI / 2, Math.PI / 2, Math.PI, 0];
 
 const GHOST_DEFS = [
   { name: 'Blinky', color: '#ff3b5c', scatter: { r: 0, c: 26 }, baseSpeed: 3.95, releaseAt: 0.8, releasePellets: 0 },
@@ -53,8 +49,6 @@ const GHOST_DEFS = [
 ];
 
 const HOUSE_COLS = [11, 12, 13, 14, 15];
-const HOUSE_ROW = 14.5;
-const PELLET_COLORS = ['#ff9ee8', '#ffe08a', '#8ee7ff', '#9dffc9'];
 const HS_KEY = 'pacuwu_hiscore';
 const MAX_LEVEL = 5;
 const SHAKE_DURATION = 0.35;
@@ -119,19 +113,10 @@ interface TrailDot {
   size: number;
 }
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  const rad = Math.min(r, w / 2, h / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + rad, y);
-  ctx.arcTo(x + w, y, x + w, y + h, rad);
-  ctx.arcTo(x + w, y + h, x, y + h, rad);
-  ctx.arcTo(x, y + h, x, y, rad);
-  ctx.arcTo(x, y, x + w, y, rad);
-  ctx.closePath();
-}
+
 
 export class Game {
-  private ctx: CanvasRenderingContext2D;
+  public renderer3d: Renderer3D;
   private sfx = new Sfx();
   private onUi: (u: UiState) => void;
   private raf = 0;
@@ -148,7 +133,6 @@ export class Game {
   private pellets = new Map<number, boolean>();
   private pelletsLeft = 0;
   private pelletsEaten = 0;
-  private mazeLayer: HTMLCanvasElement | null = null;
 
   private pac: Pac = {
     r: START_TILE.r,
@@ -181,13 +165,11 @@ export class Game {
   private trailDist = 0;
   private lastPacX = 0;
   private lastPacY = 0;
-  private shakeT = 0;
-  private shakeMag = 6;
+  public shakeT = 0;
+  public shakeMag = 6;
 
   constructor(canvas: HTMLCanvasElement, onUi: (u: UiState) => void) {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Canvas 2D context unavailable');
-    this.ctx = ctx;
+    this.renderer3d = new Renderer3D(canvas);
     this.onUi = onUi;
     try {
       this.hiScore = Number(localStorage.getItem(HS_KEY) ?? 0) || 0;
@@ -328,8 +310,6 @@ export class Game {
 
     this.floats = [];
     this.particles = [];
-    this.buildMazeLayer();
-    this.rebuildPelletLayer();
   }
 
   private resetPositions() {
@@ -523,7 +503,7 @@ export class Game {
     return crossed;
   }
 
-  private posOf(m: Mover): { x: number; y: number } {
+  public posOf(m: Mover): { x: number; y: number } {
     const v = DIR_VEC[m.dir];
     return {
       x: m.c * TILE + TILE / 2 + v.x * TILE * m.p,
@@ -722,7 +702,6 @@ export class Game {
       this.sfx.chomp(this.chompAlt++);
     }
     this.checkExtraLife();
-    this.rebuildPelletLayer();
     this.emit();
     if (this.pelletsLeft === 0) this.startLevelClear();
   }
@@ -961,545 +940,10 @@ export class Game {
     }
   }
 
-  // ------------------------------------------------------------------ layers
-
-  private buildMazeLayer() {
-    const layer = document.createElement('canvas');
-    layer.width = CANVAS_W;
-    layer.height = CANVAS_H;
-    const g = layer.getContext('2d');
-    if (!g) return;
-    this.mazeLayer = layer;
-
-    // floor
-    const grad = g.createLinearGradient(0, 0, 0, CANVAS_H);
-    grad.addColorStop(0, '#0c0e2b');
-    grad.addColorStop(1, '#050717');
-    g.fillStyle = grad;
-    g.fillRect(0, 0, CANVAS_W, CANVAS_H);
-
-    // Beautiful grid background for high-tech aesthetic
-    const hue = (185 + (this.level - 1) * 18) % 360;
-
-    g.strokeStyle = `hsla(${hue}, 100%, 62%, 0.05)`;
-    g.lineWidth = 1;
-    for (let r = 0; r <= ROWS; r++) {
-      g.beginPath();
-      g.moveTo(0, r * TILE);
-      g.lineTo(CANVAS_W, r * TILE);
-      g.stroke();
-    }
-    for (let c = 0; c <= COLS; c++) {
-      g.beginPath();
-      g.moveTo(c * TILE, 0);
-      g.lineTo(c * TILE, CANVAS_H);
-      g.stroke();
-    }
-
-    // Draw subtle cyber/neon patterns on the floor corridors
-    g.fillStyle = `hsla(${hue}, 100%, 62%, 0.018)`;
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        if (!this.isWallChar(r, c) && GRID[r][c] !== ' ') {
-          g.fillRect(c * TILE + 2, r * TILE + 2, TILE - 4, TILE - 4);
-        }
-      }
-    }
-
-    // ghost house tint + door
-    g.fillStyle = 'rgba(255,79,140,0.08)';
-    roundRect(g, 11 * TILE, 13 * TILE, 6 * TILE, 4 * TILE, 10);
-    g.fill();
-    g.strokeStyle = 'rgba(255,79,140,0.45)';
-    g.lineWidth = 2;
-    g.setLineDash([4, 4]);
-    roundRect(g, 11 * TILE, 13 * TILE, 6 * TILE, 4 * TILE, 10);
-    g.stroke();
-    g.setLineDash([]);
-    // door bar
-    g.shadowColor = '#ff4fd8';
-    g.shadowBlur = 12;
-    g.fillStyle = '#ff4fd8';
-    roundRect(g, 13 * TILE + 2, 13 * TILE + 2, 2 * TILE - 4, 6, 3);
-    g.fill();
-    g.shadowBlur = 0;
-  }
-
-  private isWallChar(r: number, c: number): boolean {
-    return r >= 0 && r < ROWS && c >= 0 && c < COLS && this.gridChar(r, c) === '#';
-  }
-
-  private gridChar(r: number, c: number): string {
-    return GRID[r][c];
-  }
-
-  private rebuildPelletLayer() {
-    // Left as no-op. Pellets are now rendered dynamically row-by-row
-    // in the depth-sorted render loop to ensure correct occlusion.
-  }
-
-  // ------------------------------------------------------------------ 3D Rendering Helpers
-
-  private draw3DWall(ctx: CanvasRenderingContext2D, r: number, c: number, neonColor: string) {
-    const x = c * TILE;
-    const y = r * TILE;
-    const h = 22; // Height of the 3D block
-
-    // Check adjacent tiles to see which faces are exposed
-    const drawLeft = !this.isWallChar(r, c - 1);
-    const drawRight = !this.isWallChar(r, c + 1);
-    const drawFront = !this.isWallChar(r + 1, c);
-
-    // Front face (South)
-    if (drawFront) {
-      const grad = ctx.createLinearGradient(x, y + TILE - h, x, y + TILE);
-      grad.addColorStop(0, '#121841');
-      grad.addColorStop(1, '#06081d');
-      ctx.fillStyle = grad;
-      ctx.fillRect(x, y + TILE - h, TILE, h);
-
-      // Front vertical specular highlights on corners
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(x + 0.5, y + TILE - h);
-      ctx.lineTo(x + 0.5, y + TILE);
-      ctx.moveTo(x + TILE - 0.5, y + TILE - h);
-      ctx.lineTo(x + TILE - 0.5, y + TILE);
-      ctx.stroke();
-    }
-
-    // Right face (East)
-    if (drawRight) {
-      const grad = ctx.createLinearGradient(x + TILE, y - h, x + TILE, y + TILE);
-      grad.addColorStop(0, '#0a0d2a');
-      grad.addColorStop(1, '#030514');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.moveTo(x + TILE, y);
-      ctx.lineTo(x + TILE, y + TILE);
-      ctx.lineTo(x + TILE, y + TILE - h);
-      ctx.lineTo(x + TILE, y - h);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // Left face (West)
-    if (drawLeft) {
-      const grad = ctx.createLinearGradient(x, y - h, x, y + TILE);
-      grad.addColorStop(0, '#192159');
-      grad.addColorStop(1, '#070a21');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x, y + TILE);
-      ctx.lineTo(x, y + TILE - h);
-      ctx.lineTo(x, y - h);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // Top face
-    ctx.fillStyle = '#171e54';
-    ctx.fillRect(x + 0.5, y - h + 0.5, TILE - 1, TILE - 1);
-
-    // Neon glow cap
-    ctx.strokeStyle = neonColor;
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(x + 1, y - h + 1, TILE - 2, TILE - 2);
-
-    // Inner detail (neon core)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
-    ctx.fillRect(x + 3, y - h + 3, TILE - 6, TILE - 6);
-  }
-
-  private drawFloorShadow(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
-    ctx.save();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-    ctx.beginPath();
-    ctx.ellipse(x, y, r, r * 0.45, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  private drawPelletsInRow(ctx: CanvasRenderingContext2D, r: number) {
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    
-    for (let c = 0; c < COLS; c++) {
-      const key = r * COLS + c;
-      if (this.pellets.has(key)) {
-        const power = this.pellets.get(key)!;
-        const x = c * TILE + TILE / 2;
-        const y = r * TILE + TILE / 2;
-        
-        if (power) {
-          const pulse = 1 + Math.sin(this.time * 5 + r + c) * 0.12;
-          ctx.save();
-          ctx.translate(x, y - 5); // Float power pellet
-          ctx.scale(pulse, pulse);
-          
-          // Small floating shadow on floor
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-          ctx.beginPath();
-          ctx.ellipse(0, 5, 8, 4, 0, 0, Math.PI * 2);
-          ctx.fill();
-          
-          ctx.shadowColor = '#ffe08a';
-          ctx.shadowBlur = 10;
-          ctx.fillStyle = '#fff7d6';
-          ctx.font = '700 13px Quicksand, "Segoe UI", sans-serif';
-          ctx.fillText('OwO', 0, 0);
-          ctx.shadowBlur = 0;
-          
-          ctx.strokeStyle = 'rgba(255,224,138,0.45)';
-          ctx.lineWidth = 1.2;
-          ctx.beginPath();
-          ctx.arc(0, 0, 10, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.restore();
-        } else {
-          // Normal UwU pellet on floor
-          const color = PELLET_COLORS[(r * 13 + c * 7) % PELLET_COLORS.length];
-          ctx.shadowColor = color;
-          ctx.shadowBlur = 4;
-          ctx.fillStyle = color;
-          ctx.font = '700 9px Quicksand, "Segoe UI", sans-serif';
-          ctx.fillText('UwU', x, y);
-        }
-      }
-    }
-    ctx.restore();
-  }
-
-  private drawTrailInRow(ctx: CanvasRenderingContext2D, r: number) {
-    for (const t of this.trail) {
-      if (Math.floor(t.y / TILE) === r) {
-        const a = Math.max(0, 1 - t.t / t.life);
-        const hue = t.hue % 360;
-        ctx.save();
-        ctx.globalAlpha = a * 0.85;
-        ctx.fillStyle = `hsl(${hue} 100% 65%)`;
-        ctx.shadowColor = `hsl(${hue} 100% 60%)`;
-        ctx.shadowBlur = 8;
-        ctx.beginPath();
-        ctx.arc(t.x, t.y, t.size * a + 0.6, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-    }
-  }
-
-  private drawBonusInRow(ctx: CanvasRenderingContext2D, r: number) {
-    if (!this.bonus || this.bonus.tile.r !== r) return;
-    const b = this.bonus;
-    const x = b.tile.c * TILE + TILE / 2;
-    const y = b.tile.r * TILE + TILE / 2;
-    const floatY = Math.sin(this.time * 6) * 2;
-    const fade = b.life - b.t < 2 ? 0.4 + 0.6 * Math.abs(Math.sin(this.time * 8)) : 1;
-    ctx.save();
-    
-    // Shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-    ctx.beginPath();
-    ctx.ellipse(x, y, 10, 4, 0, 0, Math.PI * 2);
-    ctx.fill();
-    
-    ctx.globalAlpha = fade;
-    ctx.translate(x, y - 8 + floatY);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = '#ff4fd8';
-    ctx.shadowBlur = 14;
-    ctx.fillStyle = '#ff8fd8';
-    ctx.font = '700 14px Quicksand, "Segoe UI", sans-serif';
-    ctx.fillText('XD', 0, 0);
-    ctx.restore();
-  }
-
   // ------------------------------------------------------------------ render
 
   private render() {
-    const ctx = this.ctx;
-    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
-    ctx.fillStyle = '#070a1c';
-    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-    
-    // screen shake (decays over time)
-    const s = this.shakeT > 0 ? this.shakeT / SHAKE_DURATION : 0;
-    ctx.save();
-    if (s > 0) {
-      ctx.translate((Math.random() * 2 - 1) * this.shakeMag * s, (Math.random() * 2 - 1) * this.shakeMag * s);
-    }
-    
-    // Draw pre-rendered floor layer (includes grid, house, and background)
-    if (this.mazeLayer) ctx.drawImage(this.mazeLayer, 0, 0);
-
-    const hue = (185 + (this.level - 1) * 18) % 360;
-    const neon = `hsl(${hue} 100% 62%)`;
-
-    // Painter's algorithm: draw row-by-row to correctly overlap elements
-    for (let r = 0; r < ROWS; r++) {
-      // 1. Draw floor trail elements in this row
-      this.drawTrailInRow(ctx, r);
-
-      // 2. Draw pellets in this row
-      this.drawPelletsInRow(ctx, r);
-
-      // 3. Draw bonus in this row
-      this.drawBonusInRow(ctx, r);
-
-      // 4. Draw walls in this row (so they sort behind movers in later rows)
-      for (let c = 0; c < COLS; c++) {
-        if (this.isWallChar(r, c)) {
-          this.draw3DWall(ctx, r, c, neon);
-        }
-      }
-
-      // 5. Draw Pacman if in this row
-      const px = this.posOf(this.pac);
-      const pacR = Math.floor(px.y / TILE);
-      if (pacR === r && this.state !== 'dying') {
-        this.drawPac(ctx);
-      }
-
-      // 6. Draw ghosts if in this row
-      for (const g of this.ghosts) {
-        let ghostR = 14;
-        if (g.state === 'house') {
-          const gy = (HOUSE_ROW + 0.5) * TILE + Math.sin(g.bouncePhase) * TILE * 0.55;
-          ghostR = Math.floor(gy / TILE);
-        } else {
-          const gp = this.posOf(g);
-          ghostR = Math.floor(gp.y / TILE);
-        }
-        if (ghostR === r) {
-          if (g.state === 'house') this.drawHouseGhost(ctx, g);
-          else this.drawGhost(ctx, g);
-        }
-      }
-
-      // 7. Draw dying pacman if in this row
-      if (this.state === 'dying' && pacR === r) {
-        this.drawDyingPac(ctx);
-      }
-    }
-
-    // Render screen space FX overlays (floats, particles, text) always on top
-    this.drawFloats(ctx);
-    this.drawParticles(ctx);
-    this.drawCenterMessage(ctx);
-    
-    ctx.restore();
-  }
-
-  private drawHouseGhost(ctx: CanvasRenderingContext2D, g: Ghost) {
-    const x = (g.houseCol + 0.5) * TILE;
-    const y = (HOUSE_ROW + 0.5) * TILE + Math.sin(g.bouncePhase) * TILE * 0.55;
-    this.drawFloorShadow(ctx, x, y, TILE * 0.4);
-    this.drawGhostBody(ctx, x, y - 12, g.color, 1, g.dir, g.frightened);
-  }
-
-  private drawGhost(ctx: CanvasRenderingContext2D, g: Ghost) {
-    const p = this.posOf(g);
-    this.drawFloorShadow(ctx, p.x, p.y, TILE * 0.4);
-    if (g.state === 'eyes') {
-      this.drawEyes(ctx, p.x, p.y - 12, TILE * 0.48, g.dir);
-    } else {
-      this.drawGhostBody(ctx, p.x, p.y - 12, g.color, 1, g.dir, g.frightened);
-    }
-  }
-
-  private drawEyes(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, dir: Dir) {
-    const ex = Math.cos(DIR_ANGLE[dir]) * 2;
-    const ey = Math.sin(DIR_ANGLE[dir]) * 2;
-    ctx.save();
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.ellipse(x - r * 0.3, y - r * 0.2, r * 0.22, r * 0.3, 0, 0, Math.PI * 2);
-    ctx.ellipse(x + r * 0.3, y - r * 0.2, r * 0.22, r * 0.3, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#2743ff';
-    ctx.beginPath();
-    ctx.arc(x - r * 0.3 + ex, y - r * 0.2 + ey, r * 0.12, 0, Math.PI * 2);
-    ctx.arc(x + r * 0.3 + ex, y - r * 0.2 + ey, r * 0.12, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  private drawGhostBody(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    color: string,
-    scale: number,
-    dir: Dir,
-    frightened: boolean,
-  ) {
-    const r = TILE * 0.48 * scale;
-    const flash =
-      frightened && this.frightT < 1.6 && Math.floor(this.time * 10) % 2 === 0;
-
-    ctx.save();
-    ctx.shadowColor = frightened ? '#2e4fff' : color;
-    ctx.shadowBlur = 12;
-    
-    const grad = ctx.createLinearGradient(x, y - r, x, y + r);
-    grad.addColorStop(0, flash ? '#ffffff' : frightened ? '#5c80ff' : '#ffffff');
-    grad.addColorStop(1, flash ? '#aaaaaa' : frightened ? '#182b99' : color);
-    ctx.fillStyle = grad;
-
-    ctx.beginPath();
-    ctx.arc(x, y - r * 0.15, r, Math.PI, 0);
-    for (let i = 0; i < 3; i++) {
-      const bx = x - r + (i * 2 * r) / 3 + r / 3;
-      ctx.arc(bx, y + r * 0.15, r / 3, 0, Math.PI);
-    }
-    ctx.closePath();
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    // eyes
-    const ex = Math.cos(DIR_ANGLE[dir]) * 1.5;
-    const ey = Math.sin(DIR_ANGLE[dir]) * 1.5;
-    if (frightened) {
-      // scared face
-      ctx.fillStyle = flash ? '#2e4fff' : '#ffffff';
-      ctx.beginPath();
-      ctx.arc(x - r * 0.32, y - r * 0.35, r * 0.16, 0, Math.PI * 2);
-      ctx.arc(x + r * 0.32, y - r * 0.35, r * 0.16, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = flash ? '#2e4fff' : '#ffffff';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(x - r * 0.42, y + r * 0.28);
-      for (let i = 0; i < 4; i++) {
-        const bx = x - r * 0.42 + (i * r * 0.28);
-        ctx.lineTo(bx + r * 0.14, y + r * 0.28 + (i % 2 === 0 ? 3 : -3));
-      }
-      ctx.stroke();
-    } else {
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.ellipse(x - r * 0.32, y - r * 0.35, r * 0.22, r * 0.27, 0, 0, Math.PI * 2);
-      ctx.ellipse(x + r * 0.32, y - r * 0.35, r * 0.22, r * 0.27, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#2743ff';
-      ctx.beginPath();
-      ctx.arc(x - r * 0.32 + ex, y - r * 0.35 + ey, r * 0.1, 0, Math.PI * 2);
-      ctx.arc(x + r * 0.32 + ex, y - r * 0.35 + ey, r * 0.1, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
-  }
-
-  private drawPac(ctx: CanvasRenderingContext2D) {
-    const p = this.posOf(this.pac);
-    const r = TILE * 0.48;
-    const chomp = 0.16 + 0.3 * Math.abs(Math.sin(this.pac.chompT));
-    
-    this.drawFloorShadow(ctx, p.x, p.y, r);
-    
-    ctx.save();
-    ctx.translate(p.x, p.y - 10);
-    ctx.rotate(DIR_ANGLE[this.pac.dir]);
-    ctx.shadowColor = '#ffd93d';
-    ctx.shadowBlur = 14;
-
-    const grad = ctx.createRadialGradient(r * 0.2, -r * 0.2, r * 0.1, 0, 0, r);
-    grad.addColorStop(0, '#fff5b8');
-    grad.addColorStop(0.6, '#ffd93d');
-    grad.addColorStop(1, '#cc9e00');
-    ctx.fillStyle = grad;
-
-    ctx.beginPath();
-    ctx.arc(0, 0, r, chomp, Math.PI * 2 - chomp);
-    ctx.lineTo(0, 0);
-    ctx.closePath();
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    // eye
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(r * 0.18, -r * 0.45, r * 0.16, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#1a1a2e';
-    ctx.beginPath();
-    ctx.arc(r * 0.18, -r * 0.45, r * 0.08, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  private drawDyingPac(ctx: CanvasRenderingContext2D) {
-    const p = this.posOf(this.pac);
-    const t = Math.min(1, this.deathT / 1.7);
-    const r = TILE * 0.48 * (1.15 - 1.0 * t) * Math.max(0.01, 1 - t * 0.4);
-    
-    this.drawFloorShadow(ctx, p.x, p.y, r * (1 - t));
-    
-    ctx.save();
-    ctx.translate(p.x, p.y - 10);
-    ctx.rotate(this.deathT * 6);
-    ctx.fillStyle = '#ffd93d';
-    ctx.shadowColor = '#ffd93d';
-    ctx.shadowBlur = 12;
-    ctx.beginPath();
-    const mouth = 0.05 + t * 0.4;
-    ctx.arc(0, 0, r, mouth, Math.PI * 2 - mouth);
-    ctx.lineTo(0, 0);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  }
-
-  private drawFloats(ctx: CanvasRenderingContext2D) {
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    for (const f of this.floats) {
-      const a = Math.max(0, 1 - f.t);
-      ctx.save();
-      ctx.globalAlpha = a;
-      ctx.shadowColor = f.color;
-      ctx.shadowBlur = 8;
-      ctx.fillStyle = f.color;
-      ctx.font = '9px "Press Start 2P", monospace';
-      ctx.fillText(f.text, f.x, f.y - 12);
-      ctx.restore();
-    }
-    ctx.restore();
-  }
-
-  private drawParticles(ctx: CanvasRenderingContext2D) {
-    for (const pt of this.particles) {
-      const a = Math.max(0, 1 - pt.t / pt.life);
-      ctx.save();
-      ctx.globalAlpha = a;
-      ctx.fillStyle = pt.color;
-      ctx.shadowColor = pt.color;
-      ctx.shadowBlur = 6;
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y - 10, pt.size * a + 0.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-  }
-
-  private drawCenterMessage(ctx: CanvasRenderingContext2D) {
-    if (this.state !== 'ready' && this.state !== 'levelClear') return;
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const y = 20 * TILE + TILE / 2;
-    const pulse = 0.75 + 0.25 * Math.sin(this.time * 5);
-    ctx.globalAlpha = pulse;
-    ctx.shadowColor = '#4de1ff';
-    ctx.shadowBlur = 16;
-    ctx.fillStyle = '#4de1ff';
-    ctx.font = '13px "Press Start 2P", monospace';
-    ctx.fillText(this.state === 'ready' ? 'READY! uwu' : `LEVEL ${this.level} CLEAR!`, CANVAS_W / 2, y);
-    ctx.restore();
+    this.renderer3d.render(this);
   }
 }
 
