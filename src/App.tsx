@@ -27,11 +27,11 @@ const KEY_DIR: Record<string, number> = {
 };
 
 const GHOST_LEGEND = [
-  { color: '#ff3b5c', name: 'Blinky', role: 'hot on your tail' },
-  { color: '#ff9ed2', name: 'Pinky', role: 'ambushes ahead' },
-  { color: '#43e0ff', name: 'Inky', role: 'calculates the cut' },
-  { color: '#43ff9e', name: 'Psychic', role: 'reads your queued move' },
-  { color: '#ffb347', name: 'Clyde', role: 'shy, kinda' },
+  { color: '#ff3b5c', name: 'Blinky', role: 'hunter-class pursuit' },
+  { color: '#ff9ed2', name: 'Pinky', role: 'ambush protocol active' },
+  { color: '#43e0ff', name: 'Inky', role: 'intercept vector computed' },
+  { color: '#43ff9e', name: 'Psychic', role: 'reads your queued input' },
+  { color: '#ffb347', name: 'Clyde', role: 'stealth mode engaged' },
 ];
 
 export default function App() {
@@ -123,8 +123,8 @@ export default function App() {
       <div className="orb orb-c" />
 
       <header className="title-wrap">
-        <h1 className="title">PAC-UwU</h1>
-        <p className="subtitle">eat the UwU · dodge the ghosts · become the legend</p>
+        <h1 className="title">PAC-NEON</h1>
+        <p className="subtitle">chase the light · ride the grid · outrun the phantoms</p>
       </header>
 
       <div className="hud" aria-label="game status">
@@ -189,8 +189,8 @@ export default function App() {
           {ui.state === 'idle' && (
             <div className="overlay">
               <div className="panel">
-                <p className="panel-title">PAC-UwU</p>
-                <p className="panel-sub">A very hungry little guy who only eats <span className="uwu">UwU</span> and <span className="owo">OwO</span></p>
+                <p className="panel-title">PAC-NEON</p>
+                <p className="panel-sub">A synthwave vision-quest through neon corridors — harvest the <span className="uwu">data orbs</span>, and pray the <span className="owo">phantoms</span> stay hungry</p>
                 <button type="button" className="btn-primary" onClick={() => g()?.start()}>
                   ▶ START GAME
                 </button>
@@ -219,7 +219,7 @@ export default function App() {
             <div className="overlay">
               <div className="panel">
                 <p className="panel-title gameover">GAME OVER</p>
-                <p className="panel-sub">the ghosts got you… or they got <i>owned</i>, depends who you ask</p>
+                <p className="panel-sub">SYSTEM FAILURE — phantom protocol executed. the grid remembers you.</p>
                 <div className="final-score">
                   <span>Score</span>
                   <b>{ui.score}</b>
@@ -239,8 +239,8 @@ export default function App() {
           {ui.state === 'won' && (
             <div className="overlay">
               <div className="panel">
-                <p className="panel-title win">YOU WIN! ｡♥‿♥｡</p>
-                <p className="panel-sub">every last UwU and OwO has been devoured. absolute legend.</p>
+                <p className="panel-title win">YOU WIN!</p>
+                <p className="panel-sub">the entire grid has been harvested. you ARE the signal now.</p>
                 <div className="final-score">
                   <span>Final Score</span>
                   <b>{ui.score}</b>
@@ -259,8 +259,8 @@ export default function App() {
           {ui.paused && ui.state !== 'gameOver' && ui.state !== 'won' && (
             <div className="overlay">
               <div className="panel">
-                <p className="panel-title">PAUSED uwu</p>
-                <p className="panel-sub">the UwU aren't going anywhere… ok they're literally frozen</p>
+                <p className="panel-title">PAUSED</p>
+                <p className="panel-sub">simulation suspended — all systems holding steady</p>
                 <button type="button" className="btn-primary" onClick={() => g()?.resume()}>
                   ▶ RESUME
                 </button>

@@ -1,5 +1,5 @@
-// Grid constants for the Pac-UwU maze (classic Pac-Man layout, 28 x 31 tiles).
-// '#' = wall, '.' = UwU pellet, 'o' = OwO power pellet, '-' = ghost-house door, ' ' = open.
+// Grid constants for the PAC-NEON maze (classic Pac-Man layout, 28 x 31 tiles).
+// '#' = wall, '.' = pellet, 'o' = power pellet, '-' = ghost-house door, ' ' = open.
 
 export const COLS = 28;
 export const ROWS = 31;

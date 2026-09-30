@@ -1,12 +1,12 @@
 :root {
-  --bg: #05060f;
-  --cyan: #4de1ff;
-  --pink: #ff4fd8;
-  --yellow: #ffe14d;
-  --mint: #4dffc3;
-  --violet: #8b5cf6;
-  --text: #e8ecff;
-  --muted: #8f9bd4;
+  --bg: #0a0118;
+  --cyan: #05d9e8;
+  --pink: #ff2a6d;
+  --purple: #b026ff;
+  --yellow: #ffd319;
+  --mint: #00ff9f;
+  --text: #eef0ff;
+  --muted: #9aa4e0;
 }
 
 * {
@@ -21,12 +21,12 @@ body {
 
 body {
   background:
-    radial-gradient(1100px 700px at 15% -10%, #221255 0%, transparent 60%),
-    radial-gradient(900px 650px at 110% 105%, #33103f 0%, transparent 55%),
-    radial-gradient(1000px 800px at 50% 130%, #071c44 0%, transparent 60%),
-    var(--bg);
+    radial-gradient(1100px 700px at 15% -10%, #3b0a5e 0%, transparent 60%),
+    radial-gradient(900px 650px at 110% 105%, #4a0a3b 0%, transparent 55%),
+    radial-gradient(1000px 800px at 50% 130%, #061c44 0%, transparent 60%),
+    linear-gradient(180deg, #12022a 0%, var(--bg) 55%, #05020f 100%);
   color: var(--text);
-  font-family: 'Quicksand', 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Orbitron', 'Quicksand', 'Segoe UI', system-ui, sans-serif;
   min-height: 100dvh;
   overflow-x: hidden;
 }
@@ -47,38 +47,38 @@ body {
   overflow: hidden;
 }
 
-/* ambient orbs */
+/* ambient neon orbs */
 .orb {
   position: fixed;
   border-radius: 50%;
   filter: blur(90px);
-  opacity: 0.5;
+  opacity: 0.55;
   pointer-events: none;
   z-index: 0;
-  animation: drift 14s ease-in-out infinite alternate;
+  animation: drift 16s ease-in-out infinite alternate;
 }
 .orb-a {
   width: 340px;
   height: 340px;
-  background: rgba(139, 92, 246, 0.5);
+  background: rgba(176, 38, 255, 0.5);
   top: -90px;
   left: -80px;
 }
 .orb-b {
-  width: 300px;
-  height: 300px;
-  background: rgba(255, 79, 216, 0.35);
-  bottom: -80px;
+  width: 320px;
+  height: 320px;
+  background: rgba(255, 42, 109, 0.4);
+  bottom: -90px;
   right: -70px;
-  animation-delay: -5s;
+  animation-delay: -6s;
 }
 .orb-c {
-  width: 260px;
-  height: 260px;
-  background: rgba(77, 225, 255, 0.3);
+  width: 280px;
+  height: 280px;
+  background: rgba(5, 217, 232, 0.35);
   top: 40%;
   left: 55%;
-  animation-delay: -9s;
+  animation-delay: -10s;
 }
 
 @keyframes drift {
@@ -98,16 +98,17 @@ body {
 
 .title {
   margin: 0;
-  font-family: 'Press Start 2P', monospace;
-  font-size: clamp(22px, 4.5vw, 38px);
-  letter-spacing: 3px;
-  background: linear-gradient(90deg, #ffe14d, #ff4fd8, #4de1ff, #ffe14d);
+  font-family: 'Orbitron', 'Segoe UI', sans-serif;
+  font-weight: 900;
+  font-size: clamp(26px, 5vw, 44px);
+  letter-spacing: 6px;
+  background: linear-gradient(90deg, #ff2a6d, #ffd319, #05d9e8, #b026ff, #ff2a6d);
   background-size: 300% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: hue-slide 6s linear infinite;
-  filter: drop-shadow(0 0 16px rgba(255, 79, 216, 0.45));
+  animation: hue-slide 7s linear infinite;
+  filter: drop-shadow(0 0 18px rgba(255, 42, 109, 0.5)) drop-shadow(0 0 34px rgba(5, 217, 232, 0.25));
 }
 
 @keyframes hue-slide {
@@ -119,9 +120,10 @@ body {
 .subtitle {
   margin: 10px 0 0;
   color: var(--muted);
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.4px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
 }
 
 /* HUD */
@@ -136,6 +138,7 @@ body {
 }
 
 .chip {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -143,36 +146,48 @@ body {
   gap: 5px;
   min-width: 88px;
   padding: 7px 14px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(6px);
-  box-shadow: inset 0 0 20px rgba(77, 225, 255, 0.04);
+  border-radius: 10px;
+  background: rgba(10, 4, 28, 0.7);
+  border: 1px solid rgba(5, 217, 232, 0.3);
+  box-shadow:
+    inset 0 0 18px rgba(176, 38, 255, 0.08),
+    0 0 12px rgba(5, 217, 232, 0.12);
+  clip-path: polygon(
+    0 6px,
+    6px 0,
+    calc(100% - 6px) 0,
+    100% 6px,
+    100% calc(100% - 6px),
+    calc(100% - 6px) 100%,
+    6px 100%,
+    0 calc(100% - 6px)
+  );
 }
 
 .chip-label {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 2.5px;
   text-transform: uppercase;
   color: var(--muted);
 }
 
 .chip-value {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 13px;
+  font-family: 'Orbitron', 'Segoe UI', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
   color: var(--yellow);
-  text-shadow: 0 0 10px rgba(255, 225, 77, 0.6);
+  text-shadow: 0 0 12px rgba(255, 211, 25, 0.65);
 }
 
 .chip-value.hi {
   color: var(--pink);
-  text-shadow: 0 0 10px rgba(255, 79, 216, 0.6);
+  text-shadow: 0 0 12px rgba(255, 42, 109, 0.65);
 }
 
 .chip-value.level {
   color: var(--cyan);
-  text-shadow: 0 0 10px rgba(77, 225, 255, 0.6);
+  text-shadow: 0 0 12px rgba(5, 217, 232, 0.65);
 }
 
 .lives {
@@ -186,7 +201,7 @@ body {
   height: 13px;
   border-radius: 50%;
   background: var(--yellow);
-  box-shadow: 0 0 8px rgba(255, 225, 77, 0.8);
+  box-shadow: 0 0 9px rgba(255, 211, 25, 0.9);
 }
 
 .hud-buttons {
@@ -196,9 +211,9 @@ body {
 
 .icon-btn {
   width: 44px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  border: 1px solid rgba(5, 217, 232, 0.3);
+  background: rgba(10, 4, 28, 0.7);
   color: var(--text);
   font-size: 17px;
   cursor: pointer;
@@ -207,8 +222,8 @@ body {
 
 .icon-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 4px 16px rgba(77, 225, 255, 0.25);
+  background: rgba(176, 38, 255, 0.2);
+  box-shadow: 0 4px 18px rgba(255, 42, 109, 0.35);
 }
 
 .icon-btn:disabled {
@@ -224,7 +239,7 @@ body {
 /* frame */
 .frame-wrap {
   z-index: 1;
-  width: min(94vw, calc((100dvh - 220px) * 672 / 744), 800px); /* Increased max-width to zoom in */
+  width: min(94vw, calc((100dvh - 220px) * 672 / 744), 800px);
   perspective: 1000px;
 }
 
@@ -232,34 +247,36 @@ body {
   position: relative;
   border-radius: 16px;
   overflow: hidden;
-  background: #070a1c;
+  background: #070213;
   transform-style: preserve-3d;
   box-shadow:
-    0 25px 50px rgba(0, 0, 0, 0.9),
-    0 0 0 2px rgba(77, 225, 255, 0.5),
-    0 0 60px rgba(139, 92, 246, 0.4),
-    0 0 120px rgba(77, 225, 255, 0.2),
-    inset 0 0 80px rgba(0, 0, 0, 0.6);
+    0 25px 55px rgba(0, 0, 0, 0.9),
+    0 0 0 2px rgba(5, 217, 232, 0.55),
+    0 0 0 4px rgba(255, 42, 109, 0.25),
+    0 0 70px rgba(176, 38, 255, 0.5),
+    0 0 140px rgba(5, 217, 232, 0.25),
+    inset 0 0 90px rgba(0, 0, 0, 0.65);
   animation: pulse-glow 4s ease-in-out infinite alternate;
 }
 
 @keyframes pulse-glow {
   to {
     box-shadow:
-      0 35px 70px rgba(0, 0, 0, 0.9),
-      0 0 0 3px rgba(77, 225, 255, 0.8),
-      0 0 90px rgba(139, 92, 246, 0.7),
-      0 0 160px rgba(77, 225, 255, 0.4),
-      inset 0 0 100px rgba(0, 0, 0, 0.8);
+      0 35px 75px rgba(0, 0, 0, 0.9),
+      0 0 0 3px rgba(5, 217, 232, 0.9),
+      0 0 0 5px rgba(255, 42, 109, 0.4),
+      0 0 105px rgba(176, 38, 255, 0.75),
+      0 0 180px rgba(5, 217, 232, 0.4),
+      inset 0 0 110px rgba(0, 0, 0, 0.8);
   }
 }
 
-/* Screen Reflection Glare */
+/* screen reflection glare */
 .frame::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 40%, transparent 60%, rgba(77,225,255,0.08) 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, transparent 40%, transparent 60%, rgba(5, 217, 232, 0.08) 100%);
   pointer-events: none;
   z-index: 20;
 }
@@ -299,7 +316,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 18px;
-  background: rgba(5, 6, 15, 0.72);
+  background: rgba(8, 2, 20, 0.78);
   backdrop-filter: blur(8px);
   z-index: 10;
   animation: fade-in 0.35s ease;
@@ -325,66 +342,88 @@ body {
   max-width: 440px;
   width: 100%;
   padding: 26px 24px;
-  border-radius: 18px;
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  border-radius: 14px;
+  background: linear-gradient(165deg, rgba(24, 8, 44, 0.85), rgba(10, 4, 28, 0.9));
+  border: 1px solid rgba(5, 217, 232, 0.32);
+  box-shadow:
+    0 0 34px rgba(255, 42, 109, 0.18),
+    0 0 70px rgba(176, 38, 255, 0.22),
+    0 18px 50px rgba(0, 0, 0, 0.6),
+    inset 0 0 40px rgba(176, 38, 255, 0.06);
   text-align: center;
+  clip-path: polygon(
+    0 10px,
+    10px 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% calc(100% - 10px),
+    calc(100% - 10px) 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  );
 }
 
 .panel-title {
   margin: 0;
-  font-family: 'Press Start 2P', monospace;
-  font-size: clamp(15px, 3.4vw, 22px);
+  font-family: 'Orbitron', 'Segoe UI', sans-serif;
+  font-weight: 900;
+  font-size: clamp(16px, 3.6vw, 24px);
+  letter-spacing: 3px;
   color: var(--yellow);
-  text-shadow: 0 0 18px rgba(255, 225, 77, 0.55);
+  text-shadow: 0 0 20px rgba(255, 211, 25, 0.6);
 }
 
 .panel-title.gameover {
   color: #ff5d7a;
-  text-shadow: 0 0 18px rgba(255, 59, 92, 0.6);
+  text-shadow: 0 0 20px rgba(255, 42, 109, 0.7);
 }
 
 .panel-title.win {
   color: var(--mint);
-  text-shadow: 0 0 18px rgba(77, 255, 195, 0.6);
+  text-shadow: 0 0 20px rgba(0, 255, 159, 0.65);
 }
 
 .panel-sub {
   margin: 0;
-  color: #b6bede;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.5;
+  color: #b7bee8;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  line-height: 1.6;
 }
 
 .uwu {
-  color: #ff9ee8;
+  color: var(--cyan);
   font-weight: 700;
+  text-shadow: 0 0 10px rgba(5, 217, 232, 0.6);
 }
 
 .owo {
-  color: #ffe08a;
+  color: var(--pink);
   font-weight: 700;
+  text-shadow: 0 0 10px rgba(255, 42, 109, 0.6);
 }
 
 .btn-primary {
-  font-family: 'Press Start 2P', monospace;
+  font-family: 'Orbitron', 'Segoe UI', sans-serif;
+  font-weight: 800;
   font-size: 13px;
-  color: #0a0d1f;
-  background: linear-gradient(180deg, #ffe14d, #ffc93d);
+  letter-spacing: 2px;
+  color: #fff;
+  background: linear-gradient(180deg, #ff2a6d, #b026ff);
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 14px 26px;
   cursor: pointer;
-  box-shadow: 0 0 24px rgba(255, 225, 77, 0.45);
+  box-shadow: 0 0 26px rgba(255, 42, 109, 0.5);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
   transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
 }
 
 .btn-primary:hover {
   transform: translateY(-3px) scale(1.03);
-  box-shadow: 0 0 38px rgba(255, 225, 77, 0.7);
-  filter: brightness(1.08);
+  box-shadow: 0 0 42px rgba(255, 42, 109, 0.8);
+  filter: brightness(1.1);
 }
 
 .btn-primary:active {
@@ -394,15 +433,16 @@ body {
 .hint {
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
+  letter-spacing: 1px;
 }
 
 kbd {
   display: inline-block;
   padding: 2px 6px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(5, 217, 232, 0.12);
+  border: 1px solid rgba(5, 217, 232, 0.4);
   border-bottom-width: 2px;
   font-family: 'Press Start 2P', monospace;
   font-size: 9px;
@@ -422,8 +462,13 @@ kbd {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
-  color: #aeb6e6;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  color: #b9c0ee;
+}
+
+.legend-item b {
+  color: var(--text);
 }
 
 .ghost-dot {
@@ -439,7 +484,8 @@ kbd {
   justify-content: center;
   gap: 6px 18px;
   margin-top: 2px;
-  font-size: 12px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
   color: var(--muted);
 }
 
@@ -448,17 +494,18 @@ kbd {
   justify-content: space-between;
   gap: 24px;
   align-items: baseline;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--muted);
   padding: 6px 18px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  background: rgba(5, 217, 232, 0.06);
+  border: 1px solid rgba(5, 217, 232, 0.2);
   min-width: 220px;
 }
 
 .final-score b {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 14px;
+  font-family: 'Orbitron', 'Segoe UI', sans-serif;
+  font-size: 15px;
   color: var(--yellow);
 }
 
@@ -470,8 +517,8 @@ kbd {
 .electron-badge {
   margin-top: 4px;
   font-size: 10px;
-  letter-spacing: 0.5px;
-  color: rgba(143, 155, 212, 0.75);
+  letter-spacing: 1px;
+  color: rgba(154, 164, 224, 0.7);
   text-align: center;
   user-select: none;
   z-index: 1;
@@ -501,21 +548,22 @@ kbd {
 }
 
 .dpad-btn {
-  border-radius: 14px;
-  border: 1px solid rgba(77, 225, 255, 0.35);
-  background: rgba(13, 17, 40, 0.75);
+  border-radius: 12px;
+  border: 1px solid rgba(5, 217, 232, 0.4);
+  background: rgba(12, 6, 34, 0.8);
   color: var(--cyan);
   font-size: 17px;
   cursor: pointer;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
-  box-shadow: 0 0 14px rgba(77, 225, 255, 0.15);
+  box-shadow: 0 0 16px rgba(5, 217, 232, 0.2);
   transition: background 0.1s ease, transform 0.1s ease;
 }
 
 .dpad-btn:active {
-  background: rgba(77, 225, 255, 0.25);
+  background: rgba(255, 42, 109, 0.3);
+  color: #fff;
   transform: scale(0.92);
 }
 

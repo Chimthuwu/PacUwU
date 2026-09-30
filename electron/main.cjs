@@ -28,9 +28,9 @@ function createWindow() {
     height: 1040,
     minWidth: 720,
     minHeight: 780,
-    backgroundColor: '#05060f',
+    backgroundColor: '#0a0118',
     autoHideMenuBar: true,
-    title: 'PAC-UwU',
+    title: 'PAC-NEON',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,

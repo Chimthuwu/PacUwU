@@ -2,7 +2,7 @@
   "name": "pac-uwu",
   "private": true,
   "version": "1.0.0",
-  "description": "PAC-UwU — a modern neon Pac-Man where you eat UwU and OwO.",
+  "description": "PAC-NEON — a true-3D synthwave Pac-Man. Chase the light through a neon grid.",
   "author": {
     "name": "Freebuff",
     "email": "hello@freebuff.com"
@@ -19,8 +19,10 @@
     "electron:build": "npm run build && electron-builder"
   },
   "dependencies": {
+    "@types/three": "^0.185.4",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@types/react": "^19.1.0",
